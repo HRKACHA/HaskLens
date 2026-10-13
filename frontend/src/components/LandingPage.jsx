@@ -5,22 +5,15 @@ import {
   FileCode,
   ShieldCheck,
   Network,
-  CheckCheck,
-  Activity,
   ArrowRight,
   Zap,
-  Eye,
-  BookOpen,
-  Code2,
+  Play,
   Layers,
-  Target,
-  ChevronDown,
-  ExternalLink,
-  GraduationCap,
-  Lightbulb,
-  Puzzle,
-  Search,
   Cpu,
+  Terminal,
+  ExternalLink,
+  Code2,
+  RefreshCw,
 } from 'lucide-react';
 
 function GithubIcon({ size = 18, color = 'currentColor' }) {
@@ -31,748 +24,639 @@ function GithubIcon({ size = 18, color = 'currentColor' }) {
   );
 }
 
-const PIPELINE_STEPS = [
-  { icon: FileCode, label: 'Lexer', desc: 'Tokenizes source into a stream of typed tokens', color: '#bc8cff' },
-  { icon: Layers, label: 'Parser', desc: 'Builds an abstract syntax tree from tokens', color: '#58a6ff' },
-  { icon: ShieldCheck, label: 'Type Checker', desc: 'Infers types and detects mismatches', color: '#3fb950' },
-  { icon: Search, label: 'Semantic Analyzer', desc: 'Finds undefined vars, unused params, arity errors', color: '#d29922' },
-  { icon: Network, label: 'Recursion Analyzer', desc: 'Detects direct/mutual recursion & tail calls', color: '#f0883e' },
-  { icon: Sparkles, label: 'Optimizer', desc: 'Applies algebraic rewrites & constant folding', color: '#58a6ff' },
-  { icon: Cpu, label: 'Evaluator', desc: 'Runs bounded evaluation & verifies optimizations', color: '#bc8cff' },
+const PIPELINE_NODES = [
+  { id: 'tokens', label: 'Tokens', icon: FileCode, color: '#bc8cff' },
+  { id: 'ast', label: 'AST Tree', icon: Layers, color: '#58a6ff' },
+  { id: 'types', label: 'HM Types', icon: ShieldCheck, color: '#3fb950' },
+  { id: 'optimizer', label: 'Optimizer', icon: Sparkles, color: '#f0883e' },
+  { id: 'eval', label: 'Evaluator', icon: Cpu, color: '#58a6ff' },
 ];
 
-const FEATURES = [
+const CODE_PREVIEWS = [
   {
-    icon: FileCode,
-    title: 'Lexical Token Stream',
-    desc: 'See every token the lexer produces — keywords, literals, operators — with line & column info.',
-    color: '#bc8cff',
+    title: 'Algebraic Rewrite',
+    source: `optimizeMe x = (x * 1) + 0 + (12 * 4)`,
+    optimized: `optimizeMe x = x + 48`,
+    highlight: 'x * 1 ➔ x  |  12 * 4 ➔ 48',
+    badge: '3 Rules Applied',
+    badgeColor: 'blue',
   },
   {
-    icon: GitBranch,
-    title: 'AST Visualizer',
-    desc: 'Explore the full abstract syntax tree with collapsible nodes, both before and after optimization.',
-    color: '#8b949e',
+    title: 'Factorial Recursion',
+    source: `fact n = if n == 0 then 1 else n * fact (n - 1)`,
+    optimized: `fact 5  ⟹  120 (Evaluated)`,
+    highlight: 'Self-recursion loop detected | Base case: n == 0',
+    badge: 'Direct Loop',
+    badgeColor: 'green',
   },
   {
-    icon: Sparkles,
-    title: 'Optimizer & Diff View',
-    desc: 'Watch algebraic rewrites happen in real-time: constant folding, identity elimination, dead-branch removal.',
-    color: '#58a6ff',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Type Inference & Semantics',
-    desc: 'Automatic Hindley-Milner style type inference with detailed diagnostics and suggestions.',
-    color: '#3fb950',
-  },
-  {
-    icon: Network,
-    title: 'Call Graph & Recursion',
-    desc: 'Visualize function call relationships, detect recursive cycles, and identify tail-call patterns.',
-    color: '#d29922',
-  },
-  {
-    icon: CheckCheck,
-    title: 'Bounded Evaluation',
-    desc: 'Execute functions with sample inputs and verify that optimized code produces identical results.',
-    color: '#58a6ff',
-  },
-  {
-    icon: Activity,
-    title: 'Compiler Metrics',
-    desc: 'Per-phase timing breakdowns, diagnostic counts, and performance analytics for every compilation.',
-    color: '#8b949e',
-  },
-  {
-    icon: Code2,
-    title: 'Export & Share',
-    desc: 'Download your AST as JSON or export optimized Haskell source code with a single click.',
-    color: '#f0883e',
-  },
-];
-
-const PROBLEMS = [
-  {
-    icon: Eye,
-    problem: 'Compilers are invisible black boxes',
-    solution: 'HaskLens makes every phase visible — from tokens to optimized output — in an interactive UI.',
-  },
-  {
-    icon: GraduationCap,
-    problem: 'Learning compiler design is abstract and hard',
-    solution: 'Students can write real Haskell code and instantly see how the lexer, parser, type checker, and optimizer process it.',
-  },
-  {
-    icon: Lightbulb,
-    problem: 'Optimizations are difficult to understand',
-    solution: 'A side-by-side diff view highlights every algebraic rewrite, so you can see exactly what changed and why.',
-  },
-  {
-    icon: Puzzle,
-    problem: 'No easy way to verify optimization correctness',
-    solution: 'Built-in bounded evaluation runs your code before and after optimization to prove the transformation is safe.',
+    title: 'Mutual Recursion',
+    source: `isEven n = if n == 0 then True else isOdd (n - 1)
+isOdd n  = if n == 0 then False else isEven (n - 1)`,
+    optimized: `isEven ⇄ isOdd (Strongly Connected Component)`,
+    highlight: "Tarjan's algorithm detected cyclic dependency",
+    badge: 'SCC Cycle',
+    badgeColor: 'purple',
   },
 ];
 
 export default function LandingPage({ onEnterApp }) {
-  const [scrollY, setScrollY] = useState(0);
-  const [visibleSections, setVisibleSections] = useState(new Set());
-  const [activePipelineStep, setActivePipelineStep] = useState(0);
+  const [activeSnippetIdx, setActiveSnippetIdx] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
 
+  // Auto-cycle the pipeline light beam
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % PIPELINE_NODES.length);
+    }, 2200);
+    return () => clearInterval(timer);
   }, []);
 
-  // Intersection observer for fade-in animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleSections((prev) => new Set([...prev, entry.target.id]));
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    document.querySelectorAll('[data-animate]').forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  // Auto-cycle pipeline steps
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActivePipelineStep((prev) => (prev + 1) % PIPELINE_STEPS.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isVisible = (id) => visibleSections.has(id);
+  const activeSnippet = CODE_PREVIEWS[activeSnippetIdx];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-main)', overflowX: 'hidden' }}>
-      {/* ===== NAVIGATION BAR ===== */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        padding: '12px 32px',
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at top, #161f30 0%, #0d1117 70%)',
+      color: 'var(--text-main)',
+      fontFamily: 'var(--font-sans)',
+      overflowX: 'hidden',
+      position: 'relative'
+    }}>
+      {/* Background Animated Ambient Lights */}
+      <div style={{
+        position: 'absolute',
+        top: '-15%',
+        left: '20%',
+        width: '550px',
+        height: '550px',
+        background: 'radial-gradient(circle, rgba(88, 166, 255, 0.12) 0%, transparent 70%)',
+        borderRadius: '50%',
+        filter: 'blur(80px)',
+        pointerEvents: 'none',
+        animation: 'floatOrb 10s ease-in-out infinite alternate',
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '25%',
+        right: '15%',
+        width: '450px',
+        height: '450px',
+        background: 'radial-gradient(circle, rgba(188, 140, 255, 0.08) 0%, transparent 70%)',
+        borderRadius: '50%',
+        filter: 'blur(80px)',
+        pointerEvents: 'none',
+        animation: 'floatOrb 12s ease-in-out infinite alternate-reverse',
+      }} />
+
+      {/* ===== NAVBAR ===== */}
+      <header style={{
+        padding: '16px 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: scrollY > 50 ? 'rgba(13, 17, 23, 0.85)' : 'transparent',
-        backdropFilter: scrollY > 50 ? 'blur(16px)' : 'none',
-        borderBottom: scrollY > 50 ? '1px solid var(--border-subtle)' : '1px solid transparent',
-        transition: 'all 0.3s ease',
+        position: 'relative',
+        zIndex: 50,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            background: 'var(--bg-tertiary)', border: '1px solid #30363d',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '34px',
+            height: '34px',
+            borderRadius: '8px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           }}>
             <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
               <circle cx="14" cy="14" r="10" stroke="#58a6ff" strokeWidth="2.2" />
-              <line x1="14" y1="2" x2="14" y2="4" stroke="#58a6ff" strokeWidth="1.5" />
-              <line x1="2" y1="14" x2="4" y2="14" stroke="#58a6ff" strokeWidth="1.5" />
-              <line x1="14" y1="24" x2="14" y2="26" stroke="#58a6ff" strokeWidth="1.5" />
-              <line x1="24" y1="14" x2="26" y2="14" stroke="#58a6ff" strokeWidth="1.5" />
               <line x1="21.5" y1="21.5" x2="29" y2="29" stroke="#8b949e" strokeWidth="3" strokeLinecap="round" />
               <text x="14" y="18" fill="#f0f6fc" fontSize="13" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
             </svg>
           </div>
-          <span style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.3px' }}>HaskLens</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <a href="#features" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, transition: 'color 0.2s' }}
-            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
-          >Features</a>
-          <a href="#why" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, transition: 'color 0.2s' }}
-            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
-          >Why HaskLens</a>
-          <a href="#pipeline" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, transition: 'color 0.2s' }}
-            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
-          >Pipeline</a>
-          <button onClick={onEnterApp} className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '0.82rem' }}>
-            Launch App <ArrowRight size={14} />
-          </button>
-        </div>
-      </nav>
-
-      {/* ===== HERO SECTION ===== */}
-      <section style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '120px 32px 80px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Animated background gradient orbs */}
-        <div style={{
-          position: 'absolute', top: '-20%', left: '-10%',
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(31, 111, 235, 0.08) 0%, transparent 70%)',
-          filter: 'blur(60px)',
-          animation: 'float 8s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-20%', right: '-10%',
-          width: '500px', height: '500px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(188, 140, 255, 0.06) 0%, transparent 70%)',
-          filter: 'blur(60px)',
-          animation: 'float 10s ease-in-out infinite reverse',
-        }} />
-
-        {/* Badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '6px 16px', borderRadius: '20px',
-          background: 'rgba(31, 111, 235, 0.1)',
-          border: '1px solid rgba(88, 166, 255, 0.2)',
-          marginBottom: '28px',
-          animation: 'fadeInUp 0.6s ease-out',
-        }}>
-          <Zap size={14} color="#58a6ff" />
-          <span style={{ fontSize: '0.82rem', color: '#58a6ff', fontWeight: 600 }}>
-            Interactive Compiler Explorer
+          <span style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.3px', color: '#f0f6fc' }}>
+            HaskLens
+          </span>
+          <span className="badge badge-blue" style={{ fontSize: '0.66rem', padding: '1px 7px' }}>
+            Compiler Observatory
           </span>
         </div>
 
-        {/* Main heading */}
-        <h1 style={{
-          fontSize: 'clamp(2.5rem, 6vw, 4.2rem)',
-          fontWeight: 800,
-          lineHeight: 1.1,
-          letterSpacing: '-1.5px',
-          maxWidth: '820px',
-          margin: '0 0 20px 0',
-          animation: 'fadeInUp 0.6s ease-out 0.1s both',
-        }}>
-          See Inside the{' '}
-          <span style={{
-            background: 'linear-gradient(135deg, #58a6ff, #bc8cff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            Haskell Compiler
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p style={{
-          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-          color: 'var(--text-muted)',
-          maxWidth: '620px',
-          lineHeight: 1.6,
-          margin: '0 0 40px 0',
-          animation: 'fadeInUp 0.6s ease-out 0.2s both',
-        }}>
-          HaskLens is a visual compiler observatory that lets you write Haskell code and watch every
-          compilation phase — lexing, parsing, type checking, optimization — unfold in real time.
-        </p>
-
-        {/* CTA Buttons */}
-        <div style={{
-          display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center',
-          animation: 'fadeInUp 0.6s ease-out 0.3s both',
-        }}>
-          <button
-            id="hero-launch-btn"
-            onClick={onEnterApp}
-            className="btn btn-primary"
-            style={{
-              padding: '12px 28px', fontSize: '1rem', fontWeight: 600,
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #1f6feb, #388bfd)',
-              boxShadow: '0 4px 20px rgba(31, 111, 235, 0.3)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 28px rgba(31, 111, 235, 0.45)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(31, 111, 235, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <Sparkles size={18} /> Launch Compiler Explorer
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <a
             href="https://github.com/HRKACHA/HaskLens"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn"
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: '0.8rem', gap: '6px', textDecoration: 'none' }}
+          >
+            <GithubIcon size={15} /> GitHub
+          </a>
+          <button
+            onClick={onEnterApp}
+            className="btn btn-primary btn-sm"
             style={{
-              padding: '12px 24px', fontSize: '1rem', borderRadius: '10px',
-              textDecoration: 'none',
+              padding: '6px 16px',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              boxShadow: '0 4px 14px rgba(31, 111, 235, 0.4)'
             }}
           >
-            <GithubIcon size={18} /> View on GitHub
-          </a>
+            Launch Explorer <ArrowRight size={13} />
+          </button>
+        </div>
+      </header>
+
+      {/* ===== HERO SECTION ===== */}
+      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px 60px', position: 'relative', zIndex: 10 }}>
+        {/* Hero Title & Pill */}
+        <div style={{ textAlign: 'center', marginBottom: '38px', animation: 'fadeInDown 0.6s ease-out' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '5px 14px',
+            background: 'rgba(88, 166, 255, 0.08)',
+            border: '1px solid rgba(88, 166, 255, 0.25)',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            color: '#58a6ff',
+            marginBottom: '18px',
+            boxShadow: '0 2px 10px rgba(88, 166, 255, 0.1)',
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3fb950', display: 'inline-block', animation: 'pulseDot 1.6s infinite' }} />
+            <span>Interactive Haskell Compiler & Optimization Observatory</span>
+          </div>
+
+          <h1 style={{
+            fontSize: 'clamp(2.4rem, 5.5vw, 3.8rem)',
+            fontWeight: 800,
+            lineHeight: 1.15,
+            letterSpacing: '-1.4px',
+            margin: '0 auto 16px',
+            maxWidth: '820px',
+            color: '#f0f6fc',
+          }}>
+            See Inside the Compiler.
+            <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              From Tokens to Algebraic Proofs.
+            </span>
+          </h1>
+
+          <p style={{
+            fontSize: '1.05rem',
+            lineHeight: 1.6,
+            color: 'var(--text-muted)',
+            maxWidth: '640px',
+            margin: '0 auto 28px',
+          }}>
+            Watch your Haskell code transform in real time. Inspect lexical token streams, browse interactive syntax trees, verify Hindley-Milner type inference, and observe algebraic term rewrites.
+          </p>
+
+          {/* Primary Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+            <button
+              id="hero-launch-ide"
+              onClick={onEnterApp}
+              className="btn btn-primary"
+              style={{
+                padding: '11px 26px',
+                fontSize: '0.94rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                boxShadow: '0 6px 20px rgba(31, 111, 235, 0.4)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 111, 235, 0.55)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(31, 111, 235, 0.4)';
+              }}
+            >
+              <Play size={15} fill="currentColor" /> Launch Compiler IDE
+            </button>
+
+            <a
+              href="https://github.com/HRKACHA/HaskLens"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+              style={{
+                padding: '11px 20px',
+                fontSize: '0.94rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                textDecoration: 'none'
+              }}
+            >
+              <GithubIcon size={16} /> GitHub Source
+            </a>
+          </div>
         </div>
 
-        {/* Scroll indicator */}
+        {/* ===== ANIMATED PIPELINE BEAM FLOW ===== */}
         <div style={{
-          position: 'absolute', bottom: '32px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-          animation: 'bounce 2s ease-in-out infinite',
+          margin: '0 auto 40px',
+          padding: '14px 20px',
+          background: 'rgba(22, 27, 34, 0.75)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
         }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase' }}>Scroll to explore</span>
-          <ChevronDown size={18} color="var(--text-dim)" />
+          {PIPELINE_NODES.map((node, idx) => {
+            const Icon = node.icon;
+            const isCurrent = idx === activeStep;
+            return (
+              <React.Fragment key={node.id}>
+                <div
+                  onClick={() => setActiveStep(idx)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: isCurrent ? 'rgba(88, 166, 255, 0.14)' : 'transparent',
+                    border: isCurrent ? '1px solid #58a6ff' : '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    transform: isCurrent ? 'scale(1.05)' : 'scale(1)',
+                  }}
+                >
+                  <Icon size={16} color={isCurrent ? '#58a6ff' : node.color} />
+                  <span style={{
+                    fontSize: '0.82rem',
+                    fontWeight: isCurrent ? 700 : 500,
+                    color: isCurrent ? '#f0f6fc' : 'var(--text-muted)',
+                  }}>
+                    {node.label}
+                  </span>
+                </div>
+
+                {idx < PIPELINE_NODES.length - 1 && (
+                  <div style={{
+                    flex: 1,
+                    height: '2px',
+                    background: idx < activeStep
+                      ? 'linear-gradient(90deg, #58a6ff, #bc8cff)'
+                      : 'var(--border-subtle)',
+                    margin: '0 8px',
+                    position: 'relative',
+                    transition: 'background 0.3s ease',
+                  }}>
+                    {idx === activeStep && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-3px',
+                        left: '50%',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#58a6ff',
+                        boxShadow: '0 0 10px #58a6ff',
+                        animation: 'pulseDot 1s infinite',
+                      }} />
+                    )}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
 
-        {/* Floating code snippet preview */}
+        {/* ===== INTERACTIVE REPL SHOWCASE CARD ===== */}
         <div style={{
-          position: 'absolute', bottom: '120px', right: '8%',
           background: 'var(--bg-secondary)',
           border: '1px solid var(--border-subtle)',
-          borderRadius: '10px',
-          padding: '16px 20px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.78rem',
-          color: '#e6edf3',
-          boxShadow: 'var(--shadow-lg)',
-          opacity: 0.7,
-          transform: `translateY(${scrollY * 0.15}px)`,
-          transition: 'opacity 0.3s',
-          maxWidth: '280px',
-          display: window.innerWidth > 1200 ? 'block' : 'none',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.6)',
+          animation: 'fadeInUp 0.7s ease-out',
         }}>
-          <div style={{ color: 'var(--text-dim)', marginBottom: '6px', fontSize: '0.68rem' }}>-- Haskell</div>
-          <div><span style={{ color: '#bc8cff' }}>fact</span> n = <span style={{ color: '#d29922' }}>if</span> n == 0</div>
-          <div style={{ paddingLeft: '16px' }}><span style={{ color: '#d29922' }}>then</span> <span style={{ color: '#58a6ff' }}>1</span></div>
-          <div style={{ paddingLeft: '16px' }}><span style={{ color: '#d29922' }}>else</span> n * <span style={{ color: '#bc8cff' }}>fact</span> (n - <span style={{ color: '#58a6ff' }}>1</span>)</div>
-        </div>
-      </section>
-
-      {/* ===== WHY HASKLENS SECTION ===== */}
-      <section id="why" data-animate style={{
-        padding: '100px 32px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        opacity: isVisible('why') ? 1 : 0,
-        transform: isVisible('why') ? 'translateY(0)' : 'translateY(40px)',
-        transition: 'all 0.7s ease-out',
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <span className="badge badge-amber" style={{ marginBottom: '14px', display: 'inline-flex' }}>
-            <Target size={12} /> The Problem
-          </span>
-          <h2 style={{
-            fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
-            fontWeight: 700,
-            letterSpacing: '-0.8px',
-            margin: '14px 0 16px',
+          {/* Card Titlebar */}
+          <div style={{
+            padding: '10px 16px',
+            background: 'var(--bg-tertiary)',
+            borderBottom: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
           }}>
-            Why We Built HaskLens
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.7 }}>
-            Compilers are among the most fascinating yet least accessible pieces of software.
-            We built HaskLens to tear open the black box and let everyone see the magic inside.
-          </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>
+                interactive-preview.hs
+              </span>
+            </div>
+
+            {/* Snippet selector tabs */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {CODE_PREVIEWS.map((snippet, idx) => (
+                <button
+                  key={snippet.title}
+                  onClick={() => setActiveSnippetIdx(idx)}
+                  style={{
+                    padding: '3px 9px',
+                    fontSize: '0.74rem',
+                    borderRadius: '5px',
+                    background: idx === activeSnippetIdx ? 'var(--bg-elevated)' : 'transparent',
+                    border: idx === activeSnippetIdx ? '1px solid #58a6ff' : '1px solid transparent',
+                    color: idx === activeSnippetIdx ? '#f0f6fc' : 'var(--text-dim)',
+                    cursor: 'pointer',
+                    fontWeight: idx === activeSnippetIdx ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {snippet.title}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Card Content Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1.1fr 1fr',
+            background: 'var(--bg-code)',
+          }}>
+            {/* Left: Original Code */}
+            <div style={{
+              padding: '18px 20px',
+              borderRight: '1px solid var(--border-subtle)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.82rem',
+              lineHeight: 1.6,
+            }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                -- Original Haskell Expression
+              </div>
+              <pre style={{ margin: 0, color: '#e6edf3', whiteSpace: 'pre-wrap' }}>
+                <code>{activeSnippet.source}</code>
+              </pre>
+            </div>
+
+            {/* Right: Transformation Output */}
+            <div style={{
+              padding: '18px 20px',
+              background: 'rgba(22, 27, 34, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.82rem',
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#58a6ff', textTransform: 'uppercase' }}>
+                    -- Compiler Rewriting & Verification
+                  </span>
+                  <span className={`badge badge-${activeSnippet.badgeColor}`} style={{ fontSize: '0.64rem' }}>
+                    {activeSnippet.badge}
+                  </span>
+                </div>
+
+                <div style={{ color: '#3fb950', fontWeight: 600, marginBottom: '6px' }}>
+                  {activeSnippet.optimized}
+                </div>
+                <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                  {activeSnippet.highlight}
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '16px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                  ✓ Semantics Preserved
+                </span>
+                <button
+                  onClick={onEnterApp}
+                  style={{
+                    background: 'none', border: 'none', color: '#58a6ff',
+                    cursor: 'pointer', fontSize: '0.74rem', fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: '4px'
+                  }}
+                >
+                  Inspect in Studio <ArrowRight size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
+        {/* ===== 3 CLASSIC HIGHLIGHT CARDS ===== */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '20px',
-        }}>
-          {PROBLEMS.map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <div key={i} style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '28px',
-                transition: 'all 0.25s ease',
-                cursor: 'default',
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#388bfd';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(31, 111, 235, 0.12)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px',
-                  background: 'rgba(248, 81, 73, 0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '16px',
-                }}>
-                  <Icon size={20} color="#f85149" />
-                </div>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '10px', color: '#f85149' }}>
-                  ✗ {item.problem}
-                </h3>
-                <div style={{
-                  width: '100%', height: '1px',
-                  background: 'linear-gradient(90deg, transparent, var(--border-subtle), transparent)',
-                  margin: '14px 0',
-                }} />
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px',
-                  background: 'rgba(63, 185, 80, 0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '12px',
-                }}>
-                  <CheckCheck size={20} color="#3fb950" />
-                </div>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  ✓ {item.solution}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ===== COMPILER PIPELINE SECTION ===== */}
-      <section id="pipeline" data-animate style={{
-        padding: '100px 32px',
-        background: 'var(--bg-secondary)',
-        borderTop: '1px solid var(--border-subtle)',
-        borderBottom: '1px solid var(--border-subtle)',
-        opacity: isVisible('pipeline') ? 1 : 0,
-        transform: isVisible('pipeline') ? 'translateY(0)' : 'translateY(40px)',
-        transition: 'all 0.7s ease-out',
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <span className="badge badge-purple" style={{ marginBottom: '14px', display: 'inline-flex' }}>
-              <Cpu size={12} /> Architecture
-            </span>
-            <h2 style={{
-              fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
-              fontWeight: 700,
-              letterSpacing: '-0.8px',
-              margin: '14px 0 16px',
-            }}>
-              The 7-Phase Compiler Pipeline
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
-              Every compilation runs through a carefully orchestrated pipeline. HaskLens visualizes each phase so you can understand the full journey from source code to optimized output.
-            </p>
-          </div>
-
-          {/* Pipeline visualization */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            flexWrap: 'wrap',
-            marginBottom: '40px',
-          }}>
-            {PIPELINE_STEPS.map((step, i) => {
-              const Icon = step.icon;
-              const isActive = i === activePipelineStep;
-              return (
-                <React.Fragment key={i}>
-                  <div
-                    onClick={() => setActivePipelineStep(i)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '20px 18px',
-                      borderRadius: '12px',
-                      background: isActive ? 'rgba(88, 166, 255, 0.08)' : 'var(--bg-primary)',
-                      border: isActive ? `1px solid ${step.color}40` : '1px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      minWidth: '110px',
-                      transform: isActive ? 'scale(1.05)' : 'scale(1)',
-                    }}
-                  >
-                    <div style={{
-                      width: '44px', height: '44px', borderRadius: '10px',
-                      background: isActive ? `${step.color}18` : 'var(--bg-tertiary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                    }}>
-                      <Icon size={22} color={isActive ? step.color : 'var(--text-muted)'} />
-                    </div>
-                    <span style={{
-                      fontSize: '0.78rem',
-                      fontWeight: isActive ? 700 : 500,
-                      color: isActive ? step.color : 'var(--text-muted)',
-                      transition: 'color 0.3s',
-                    }}>
-                      {step.label}
-                    </span>
-                  </div>
-                  {i < PIPELINE_STEPS.length - 1 && (
-                    <ArrowRight
-                      size={16}
-                      color={i < activePipelineStep ? '#58a6ff' : 'var(--text-dim)'}
-                      style={{ flexShrink: 0, transition: 'color 0.3s' }}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-
-          {/* Active step description */}
-          <div style={{
-            textAlign: 'center',
-            padding: '24px 32px',
-            background: 'var(--bg-primary)',
-            borderRadius: '10px',
-            border: '1px solid var(--border-subtle)',
-            maxWidth: '500px',
-            margin: '0 auto',
-          }}>
-            <p style={{
-              fontSize: '0.95rem',
-              color: 'var(--text-muted)',
-              margin: 0,
-              lineHeight: 1.6,
-            }}>
-              <strong style={{ color: PIPELINE_STEPS[activePipelineStep].color }}>
-                Phase {activePipelineStep + 1} — {PIPELINE_STEPS[activePipelineStep].label}:
-              </strong>{' '}
-              {PIPELINE_STEPS[activePipelineStep].desc}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FEATURES GRID ===== */}
-      <section id="features" data-animate style={{
-        padding: '100px 32px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        opacity: isVisible('features') ? 1 : 0,
-        transform: isVisible('features') ? 'translateY(0)' : 'translateY(40px)',
-        transition: 'all 0.7s ease-out',
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-          <span className="badge badge-blue" style={{ marginBottom: '14px', display: 'inline-flex' }}>
-            <Sparkles size={12} /> Capabilities
-          </span>
-          <h2 style={{
-            fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
-            fontWeight: 700,
-            letterSpacing: '-0.8px',
-            margin: '14px 0 16px',
-          }}>
-            Everything You Need to Understand a Compiler
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
-            HaskLens gives you X-ray vision into every stage of the compilation pipeline, with rich visualizations and interactive exploration tools.
-          </p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
           gap: '16px',
+          marginTop: '44px',
         }}>
-          {FEATURES.map((feat, i) => {
-            const Icon = feat.icon;
-            return (
-              <div key={i} style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '24px',
-                transition: 'all 0.25s ease',
-                cursor: 'default',
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = feat.color + '60';
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = `0 8px 24px ${feat.color}10`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px',
-                  background: `${feat.color}14`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '14px',
-                }}>
-                  <Icon size={20} color={feat.color} />
-                </div>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '8px' }}>
-                  {feat.title}
-                </h3>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-                  {feat.desc}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ===== TECH STACK STRIP ===== */}
-      <section style={{
-        padding: '48px 32px',
-        borderTop: '1px solid var(--border-subtle)',
-        borderBottom: '1px solid var(--border-subtle)',
-        background: 'var(--bg-secondary)',
-      }}>
-        <div style={{
-          maxWidth: '900px', margin: '0 auto',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: '40px', flexWrap: 'wrap',
-        }}>
-          {[
-            { name: 'Python', detail: 'Backend' },
-            { name: 'FastAPI', detail: 'REST API' },
-            { name: 'Lark', detail: 'Parser Generator' },
-            { name: 'React', detail: 'Frontend' },
-            { name: 'Vite', detail: 'Build Tool' },
-            { name: 'Pydantic', detail: 'Validation' },
-          ].map((tech, i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>{tech.name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '2px' }}>{tech.detail}</div>
+          {/* Card 1 */}
+          <div
+            style={{
+              padding: '22px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              transition: 'all 0.2s ease',
+              cursor: 'default',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#58a6ff';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '8px',
+              background: 'rgba(88, 166, 255, 0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: '14px',
+            }}>
+              <Layers size={18} color="#58a6ff" />
             </div>
-          ))}
-        </div>
-      </section>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
+              Dual AST Visualizer
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
+              Compare original parser AST and optimized rewrite tree side-by-side with collapsible nodes and location coordinates.
+            </p>
+          </div>
 
-      {/* ===== FINAL CTA ===== */}
-      <section id="cta" data-animate style={{
-        padding: '120px 32px',
-        textAlign: 'center',
-        position: 'relative',
-        opacity: isVisible('cta') ? 1 : 0,
-        transform: isVisible('cta') ? 'translateY(0)' : 'translateY(40px)',
-        transition: 'all 0.7s ease-out',
-      }}>
-        {/* Background glow */}
+          {/* Card 2 */}
+          <div
+            style={{
+              padding: '22px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              transition: 'all 0.2s ease',
+              cursor: 'default',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#3fb950';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '8px',
+              background: 'rgba(63, 185, 80, 0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: '14px',
+            }}>
+              <Sparkles size={18} color="#3fb950" />
+            </div>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
+              Algebraic Term Rewriter
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
+              Watch constant folding, identity rules (<code>x * 1 ➔ x</code>), and dead-branch pruning apply with transformation logs.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div
+            style={{
+              padding: '22px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              transition: 'all 0.2s ease',
+              cursor: 'default',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#bc8cff';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '8px',
+              background: 'rgba(188, 140, 255, 0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: '14px',
+            }}>
+              <Network size={18} color="#bc8cff" />
+            </div>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
+              Recursion & Call Topology
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
+              Tarjan's strongly connected components algorithm visualizes direct recursion loops, mutual cycles, and tail calls.
+            </p>
+          </div>
+        </div>
+
+        {/* ===== BOTTOM CTA CARD ===== */}
         <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '500px', height: '500px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(31, 111, 235, 0.06) 0%, transparent 70%)',
-          filter: 'blur(60px)', pointerEvents: 'none',
-        }} />
-
-        <h2 style={{
-          fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
-          fontWeight: 700,
-          letterSpacing: '-0.8px',
-          marginBottom: '16px',
+          marginTop: '48px',
+          padding: '36px 28px',
+          textAlign: 'center',
+          background: 'linear-gradient(180deg, rgba(31, 111, 235, 0.1) 0%, rgba(22, 27, 34, 0.6) 100%)',
+          border: '1px solid rgba(88, 166, 255, 0.25)',
+          borderRadius: '12px',
         }}>
-          Ready to Explore?
-        </h2>
-        <p style={{
-          color: 'var(--text-muted)',
-          fontSize: '1.1rem',
-          maxWidth: '480px',
-          margin: '0 auto 36px',
-          lineHeight: 1.7,
-        }}>
-          Write Haskell code, hit compile, and watch the entire compiler pipeline
-          come alive — right in your browser.
-        </p>
-        <button
-          id="cta-launch-btn"
-          onClick={onEnterApp}
-          className="btn btn-primary"
-          style={{
-            padding: '14px 36px', fontSize: '1.05rem', fontWeight: 600,
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #1f6feb, #388bfd)',
-            boxShadow: '0 4px 24px rgba(31, 111, 235, 0.35)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 6px 32px rgba(31, 111, 235, 0.5)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 24px rgba(31, 111, 235, 0.35)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          <Sparkles size={18} /> Launch HaskLens Now <ArrowRight size={18} />
-        </button>
-      </section>
-
-      {/* ===== FOOTER ===== */}
-      <footer style={{
-        padding: '32px',
-        borderTop: '1px solid var(--border-subtle)',
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '12px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
-            <circle cx="14" cy="14" r="10" stroke="#58a6ff" strokeWidth="2.2" />
-            <line x1="21.5" y1="21.5" x2="29" y2="29" stroke="#8b949e" strokeWidth="3" strokeLinecap="round" />
-            <text x="14" y="18" fill="#f0f6fc" fontSize="13" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
-          </svg>
-          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>HaskLens</span>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 10px', color: '#f0f6fc' }}>
+            Ready to explore functional compilation?
+          </h2>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: '0 auto 20px', maxWidth: '480px' }}>
+            Type your own Haskell expressions or test sample programs from Euclidean GCD to Mutual Recursion.
+          </p>
+          <button
+            onClick={onEnterApp}
+            className="btn btn-primary"
+            style={{
+              padding: '10px 24px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(31, 111, 235, 0.4)'
+            }}
+          >
+            Open Compiler Studio <ArrowRight size={14} />
+          </button>
         </div>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.78rem', margin: 0 }}>
-          Built as a PCD Assignment — Interactive Haskell Compiler & Optimization Observatory
-        </p>
-        <a
-          href="https://github.com/HRKACHA/HaskLens"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <GithubIcon size={14} /> github.com/HRKACHA/HaskLens <ExternalLink size={11} />
-        </a>
+      </main>
+
+      {/* ===== MINIMAL FOOTER ===== */}
+      <footer style={{
+        padding: '24px 32px',
+        borderTop: '1px solid var(--border-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        fontSize: '0.78rem',
+        color: 'var(--text-dim)',
+      }}>
+        <div>
+          HaskLens • Principles of Compiler Design Assignment
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <a
+            href="https://github.com/HRKACHA/HaskLens"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}
+          >
+            <GithubIcon size={14} /> GitHub Repository <ExternalLink size={10} />
+          </a>
+        </div>
       </footer>
 
-      {/* ===== KEYFRAME ANIMATIONS ===== */}
+      {/* ===== SLEEK KEYFRAME ANIMATIONS ===== */}
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(24px); }
+        @keyframes floatOrb {
+          0% { transform: translate(0px, 0px) scale(1); }
+          100% { transform: translate(40px, -30px) scale(1.1); }
+        }
+        @keyframes pulseDot {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.3); opacity: 0.6; }
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-16px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-30px) translateX(15px); }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-8px); }
-          60% { transform: translateY(-4px); }
-        }
-
-        /* Smooth scroll */
-        html { scroll-behavior: smooth; }
-
-        /* Nav link hover */
-        nav a:hover { color: var(--text-main) !important; }
       `}</style>
     </div>
   );
