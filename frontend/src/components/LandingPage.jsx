@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Sparkles,
-  GitBranch,
   FileCode,
   ShieldCheck,
   Network,
@@ -13,7 +11,10 @@ import {
   Terminal,
   ExternalLink,
   Code2,
-  RefreshCw,
+  CheckCircle2,
+  Info,
+  GitBranch,
+  BookOpen,
 } from 'lucide-react';
 
 function GithubIcon({ size = 18, color = 'currentColor' }) {
@@ -24,133 +25,201 @@ function GithubIcon({ size = 18, color = 'currentColor' }) {
   );
 }
 
-const PIPELINE_NODES = [
-  { id: 'tokens', label: 'Tokens', icon: FileCode, color: '#bc8cff' },
-  { id: 'ast', label: 'AST Tree', icon: Layers, color: '#58a6ff' },
-  { id: 'types', label: 'HM Types', icon: ShieldCheck, color: '#3fb950' },
-  { id: 'optimizer', label: 'Optimizer', icon: Sparkles, color: '#f0883e' },
-  { id: 'eval', label: 'Evaluator', icon: Cpu, color: '#58a6ff' },
+// 7 Compiler pipeline stages
+const PIPELINE_STAGES = [
+  {
+    step: '01',
+    name: 'Lexical Analysis',
+    component: 'Lexer',
+    tech: 'Lark Regex Engine',
+    desc: 'Scans source characters into a stream of typed tokens with line/column coordinates.',
+    sample: 'Tokens: [IDENT("fact"), IDENT("n"), EQUALS, IF, INT(0), ...]'
+  },
+  {
+    step: '02',
+    name: 'Syntax Analysis',
+    component: 'LALR(1) Parser',
+    tech: 'EBNF Grammar (grammar.lark)',
+    desc: 'Builds an Abstract Syntax Tree (AST) representing function bindings, expressions, and operators.',
+    sample: 'AST: FunctionDef(name="fact", params=["n"], body=IfExpr(...))'
+  },
+  {
+    step: '03',
+    name: 'Type Checking',
+    component: 'Type Checker',
+    tech: 'Hindley-Milner (Algorithm W)',
+    desc: 'Infers types and validates binary operations, conditional branches, and function application.',
+    sample: 'Inferred Type: fact :: Int -> Int (Unification verified)'
+  },
+  {
+    step: '04',
+    name: 'Semantic Analysis',
+    component: 'Semantic Analyzer',
+    tech: 'Symbol Table & AST Visitor',
+    desc: 'Resolves identifier scoping, validates parameter arity, and catches undefined variables.',
+    sample: 'Scope: 1 function, 1 param | Arity: fact/1 | Undefined: 0'
+  },
+  {
+    step: '05',
+    name: 'Call Graph & Cycles',
+    component: 'Recursion Analyzer',
+    tech: "Tarjan's SCC Algorithm",
+    desc: 'Builds directed call graph, detects direct loops, identifies tail calls, and discovers mutual recursion.',
+    sample: 'Topology: fact -> fact (Direct Loop) | Tail Position: False'
+  },
+  {
+    step: '06',
+    name: 'Algebraic Optimization',
+    component: 'Optimizer',
+    tech: 'Multi-Pass Term Rewriter',
+    desc: 'Applies algebraic rewrite rules (x * 1 ➔ x, x + 0 ➔ x), constant folding, and dead branch pruning.',
+    sample: 'Rewrites: Constant folding & identity rules applied'
+  },
+  {
+    step: '07',
+    name: 'Bounded Evaluation',
+    component: 'Evaluator',
+    tech: 'Step-Bounded AST Interpreter',
+    desc: 'Evaluates original and optimized ASTs with sample inputs to prove semantic preservation.',
+    sample: 'Execution: fact(5) = 120 | Equivalence: Semantics Preserved ✓'
+  },
 ];
 
-const CODE_PREVIEWS = [
+// Interactive live code examples in the studio preview
+const WORKBENCH_EXAMPLES = [
   {
-    title: 'Algebraic Rewrite',
-    source: `optimizeMe x = (x * 1) + 0 + (12 * 4)`,
-    optimized: `optimizeMe x = x + 48`,
-    highlight: 'x * 1 ➔ x  |  12 * 4 ➔ 48',
-    badge: '3 Rules Applied',
-    badgeColor: 'blue',
+    id: 'algebraic',
+    name: 'Algebraic Rewrite',
+    source: `optimizeMe :: Int -> Int
+optimizeMe x = (x * 1) + 0 + (12 * 4) + (2 + 3 * 2) * 0`,
+    passOutputs: {
+      type: 'optimizeMe :: Int -> Int',
+      ast: 'FunctionDef(name="optimizeMe", params=["x"], body=BinaryOp("+", ...))',
+      rewrites: [
+        'x * 1 ⟹ x  [Identity Multiplicaton]',
+        'x + 0 ⟹ x  [Identity Addition]',
+        '12 * 4 ⟹ 48  [Constant Folding]',
+        '3 * 2 ⟹ 6  [Constant Folding]',
+        '2 + 6 ⟹ 8  [Constant Folding]',
+        '8 * 0 ⟹ 0  [Zero Multiplication]',
+      ],
+      result: 'optimizeMe x = x + 48  (Reduced 34 ➔ 12 nodes, -65%)',
+      evaluation: 'optimizeMe(8) = 56 (Semantics Preserved ✓)'
+    }
   },
   {
-    title: 'Factorial Recursion',
-    source: `fact n = if n == 0 then 1 else n * fact (n - 1)`,
-    optimized: `fact 5  ⟹  120 (Evaluated)`,
-    highlight: 'Self-recursion loop detected | Base case: n == 0',
-    badge: 'Direct Loop',
-    badgeColor: 'green',
+    id: 'factorial',
+    name: 'Factorial Recursion',
+    source: `fact :: Int -> Int
+fact n = if n == 0 then 1 else n * fact (n - 1)`,
+    passOutputs: {
+      type: 'fact :: Int -> Int',
+      ast: 'FunctionDef(name="fact", params=["n"], body=IfExpr(...))',
+      rewrites: [
+        'No algebraic rewrites applicable (Expression is in minimal canonical form)'
+      ],
+      result: 'Direct recursion loop detected | Base case: n == 0',
+      evaluation: 'fact(5) = 120 (5 recursive stack frames evaluated)'
+    }
   },
   {
-    title: 'Mutual Recursion',
-    source: `isEven n = if n == 0 then True else isOdd (n - 1)
-isOdd n  = if n == 0 then False else isEven (n - 1)`,
-    optimized: `isEven ⇄ isOdd (Strongly Connected Component)`,
-    highlight: "Tarjan's algorithm detected cyclic dependency",
-    badge: 'SCC Cycle',
-    badgeColor: 'purple',
-  },
+    id: 'mutual',
+    name: 'Mutual Recursion',
+    source: `isEven :: Int -> Bool
+isEven n = if n == 0 then True else isOdd (n - 1)
+
+isOdd :: Int -> Bool
+isOdd n = if n == 0 then False else isEven (n - 1)`,
+    passOutputs: {
+      type: 'isEven :: Int -> Bool, isOdd :: Int -> Bool',
+      ast: 'Program(declarations=[FunctionDef("isEven"), FunctionDef("isOdd")])',
+      rewrites: [
+        'Mutual call cycle: isEven ⇄ isOdd'
+      ],
+      result: 'Strongly Connected Component #1: [isEven, isOdd]',
+      evaluation: 'isEven(6) = True (Evaluated across mutual call cycle)'
+    }
+  }
 ];
 
 export default function LandingPage({ onEnterApp }) {
-  const [activeSnippetIdx, setActiveSnippetIdx] = useState(0);
-  const [activeStep, setActiveStep] = useState(0);
+  const [selectedEx, setSelectedEx] = useState(WORKBENCH_EXAMPLES[0]);
+  const [selectedStageIdx, setSelectedStageIdx] = useState(5); // Optimizer default
+  const [activeOutputTab, setActiveOutputTab] = useState('rewrites'); // 'rewrites', 'type', 'evaluation'
 
-  // Auto-cycle the pipeline light beam
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % PIPELINE_NODES.length);
-    }, 2200);
-    return () => clearInterval(timer);
-  }, []);
-
-  const activeSnippet = CODE_PREVIEWS[activeSnippetIdx];
+  const activeStage = PIPELINE_STAGES[selectedStageIdx];
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse at top, #161f30 0%, #0d1117 70%)',
-      color: 'var(--text-main)',
+      background: '#0d1117',
+      color: '#f0f6fc',
       fontFamily: 'var(--font-sans)',
-      overflowX: 'hidden',
-      position: 'relative'
+      lineHeight: 1.5,
     }}>
-      {/* Background Animated Ambient Lights */}
-      <div style={{
-        position: 'absolute',
-        top: '-15%',
-        left: '20%',
-        width: '550px',
-        height: '550px',
-        background: 'radial-gradient(circle, rgba(88, 166, 255, 0.12) 0%, transparent 70%)',
-        borderRadius: '50%',
-        filter: 'blur(80px)',
-        pointerEvents: 'none',
-        animation: 'floatOrb 10s ease-in-out infinite alternate',
-      }} />
-      <div style={{
-        position: 'absolute',
-        top: '25%',
-        right: '15%',
-        width: '450px',
-        height: '450px',
-        background: 'radial-gradient(circle, rgba(188, 140, 255, 0.08) 0%, transparent 70%)',
-        borderRadius: '50%',
-        filter: 'blur(80px)',
-        pointerEvents: 'none',
-        animation: 'floatOrb 12s ease-in-out infinite alternate-reverse',
-      }} />
-
-      {/* ===== NAVBAR ===== */}
+      {/* ===== HEADER NAVIGATION ===== */}
       <header style={{
-        padding: '16px 32px',
+        borderBottom: '1px solid #30363d',
+        background: '#161b22',
+        padding: '12px 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        position: 'relative',
+        position: 'sticky',
+        top: 0,
         zIndex: 50,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '8px',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-subtle)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '6px',
+            background: '#21262d',
+            border: '1px solid #30363d',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           }}>
-            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
               <circle cx="14" cy="14" r="10" stroke="#58a6ff" strokeWidth="2.2" />
               <line x1="21.5" y1="21.5" x2="29" y2="29" stroke="#8b949e" strokeWidth="3" strokeLinecap="round" />
-              <text x="14" y="18" fill="#f0f6fc" fontSize="13" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
+              <text x="14" y="18" fill="#f0f6fc" fontSize="12" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
             </svg>
           </div>
-          <span style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.3px', color: '#f0f6fc' }}>
-            HaskLens
-          </span>
-          <span className="badge badge-blue" style={{ fontSize: '0.66rem', padding: '1px 7px' }}>
-            Compiler Observatory
-          </span>
+          <div>
+            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f0f6fc', letterSpacing: '-0.3px' }}>
+              HaskLens
+            </span>
+            <span style={{ fontSize: '0.74rem', color: '#8b949e', marginLeft: '10px' }}>
+              Principles of Compiler Design Project
+            </span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <a
+            href="#architecture"
+            style={{ color: '#8b949e', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 500 }}
+            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
+            onMouseLeave={(e) => e.target.style.color = '#8b949e'}
+          >
+            Architecture
+          </a>
+          <a
+            href="#rationale"
+            style={{ color: '#8b949e', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 500 }}
+            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
+            onMouseLeave={(e) => e.target.style.color = '#8b949e'}
+          >
+            Why HaskLens
+          </a>
           <a
             href="https://github.com/HRKACHA/HaskLens"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: '0.8rem', gap: '6px', textDecoration: 'none' }}
+            style={{ color: '#8b949e', textDecoration: 'none', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onMouseEnter={(e) => e.target.style.color = '#f0f6fc'}
+            onMouseLeave={(e) => e.target.style.color = '#8b949e'}
           >
             <GithubIcon size={15} /> GitHub
           </a>
@@ -161,503 +230,561 @@ export default function LandingPage({ onEnterApp }) {
               padding: '6px 16px',
               fontSize: '0.82rem',
               fontWeight: 600,
-              boxShadow: '0 4px 14px rgba(31, 111, 235, 0.4)'
+              background: '#238636',
+              borderColor: 'rgba(240, 246, 252, 0.1)',
             }}
           >
-            Launch Explorer <ArrowRight size={13} />
+            Launch Compiler <ArrowRight size={13} />
           </button>
         </div>
       </header>
 
-      {/* ===== HERO SECTION ===== */}
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px 60px', position: 'relative', zIndex: 10 }}>
-        {/* Hero Title & Pill */}
-        <div style={{ textAlign: 'center', marginBottom: '38px', animation: 'fadeInDown 0.6s ease-out' }}>
+      {/* ===== HERO: TECHNICAL WORKBENCH ===== */}
+      <section style={{
+        maxWidth: '1240px',
+        margin: '0 auto',
+        padding: '48px 24px 40px',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1.25fr',
+        gap: '36px',
+        alignItems: 'start',
+      }}>
+        {/* Left Column: Authentic Project Thesis */}
+        <div>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '5px 14px',
-            background: 'rgba(88, 166, 255, 0.08)',
-            border: '1px solid rgba(88, 166, 255, 0.25)',
-            borderRadius: '20px',
-            fontSize: '0.78rem',
+            padding: '3px 10px',
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '4px',
+            fontSize: '0.74rem',
             color: '#58a6ff',
-            marginBottom: '18px',
-            boxShadow: '0 2px 10px rgba(88, 166, 255, 0.1)',
+            marginBottom: '16px',
+            fontFamily: 'var(--font-mono)'
           }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3fb950', display: 'inline-block', animation: 'pulseDot 1.6s infinite' }} />
-            <span>Interactive Haskell Compiler & Optimization Observatory</span>
+            <span>PCD Assignment // Course Project</span>
           </div>
 
           <h1 style={{
-            fontSize: 'clamp(2.4rem, 5.5vw, 3.8rem)',
+            fontSize: '2.5rem',
             fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: '-1.4px',
-            margin: '0 auto 16px',
-            maxWidth: '820px',
+            lineHeight: 1.2,
+            letterSpacing: '-0.8px',
+            margin: '0 0 14px 0',
             color: '#f0f6fc',
           }}>
-            See Inside the Compiler.
-            <br />
-            <span style={{
-              background: 'linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              From Tokens to Algebraic Proofs.
-            </span>
+            HaskLens: An Interactive Compiler Observatory for Haskell
           </h1>
 
           <p style={{
-            fontSize: '1.05rem',
+            fontSize: '0.96rem',
             lineHeight: 1.6,
-            color: 'var(--text-muted)',
-            maxWidth: '640px',
-            margin: '0 auto 28px',
+            color: '#8b949e',
+            margin: '0 0 22px 0',
           }}>
-            Watch your Haskell code transform in real time. Inspect lexical token streams, browse interactive syntax trees, verify Hindley-Milner type inference, and observe algebraic term rewrites.
+            Traditional functional language compilers are black boxes that take source text and emit binaries.
+            <strong> HaskLens</strong> exposes every internal pass in real time — token streams, LALR(1) abstract syntax trees, Hindley-Milner type inference, recursion cycles, algebraic term rewriting, and bounded evaluation proofs.
           </p>
 
-          {/* Primary Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+          {/* Action CTAs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
             <button
-              id="hero-launch-ide"
               onClick={onEnterApp}
               className="btn btn-primary"
               style={{
-                padding: '11px 26px',
-                fontSize: '0.94rem',
+                padding: '9px 20px',
+                fontSize: '0.88rem',
                 fontWeight: 600,
-                borderRadius: '8px',
-                boxShadow: '0 6px 20px rgba(31, 111, 235, 0.4)',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 111, 235, 0.55)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(31, 111, 235, 0.4)';
+                borderRadius: '6px',
+                background: '#1f6feb',
               }}
             >
-              <Play size={15} fill="currentColor" /> Launch Compiler IDE
+              <Play size={14} fill="currentColor" /> Open Compiler Studio
             </button>
-
             <a
               href="https://github.com/HRKACHA/HaskLens"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-ghost"
               style={{
-                padding: '11px 20px',
-                fontSize: '0.94rem',
-                borderRadius: '8px',
-                border: '1px solid var(--border-subtle)',
-                textDecoration: 'none'
+                padding: '9px 18px',
+                fontSize: '0.88rem',
+                borderRadius: '6px',
+                border: '1px solid #30363d',
+                textDecoration: 'none',
               }}
             >
-              <GithubIcon size={16} /> GitHub Source
+              <GithubIcon size={15} /> View Source Code
             </a>
+          </div>
+
+          {/* Technical Specifications Summary Box */}
+          <div style={{
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '14px 18px',
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+              Compiler Technical Specifications
+            </div>
+            <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid #21262d' }}>
+                  <td style={{ padding: '5px 0', color: '#8b949e' }}>Source Grammar:</td>
+                  <td style={{ padding: '5px 0', color: '#f0f6fc', fontFamily: 'var(--font-mono)' }}>Haskell 98/2010 Core Subset</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #21262d' }}>
+                  <td style={{ padding: '5px 0', color: '#8b949e' }}>Parser Engine:</td>
+                  <td style={{ padding: '5px 0', color: '#f0f6fc', fontFamily: 'var(--font-mono)' }}>LALR(1) Table Driven (Lark)</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #21262d' }}>
+                  <td style={{ padding: '5px 0', color: '#8b949e' }}>Type Inference:</td>
+                  <td style={{ padding: '5px 0', color: '#f0f6fc', fontFamily: 'var(--font-mono)' }}>Hindley-Milner (Algorithm W)</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #21262d' }}>
+                  <td style={{ padding: '5px 0', color: '#8b949e' }}>Graph Analysis:</td>
+                  <td style={{ padding: '5px 0', color: '#f0f6fc', fontFamily: 'var(--font-mono)' }}>Tarjan SCC Cycle Detection</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '5px 0', color: '#8b949e' }}>Optimizer:</td>
+                  <td style={{ padding: '5px 0', color: '#f0f6fc', fontFamily: 'var(--font-mono)' }}>Algebraic Term Rewriting Pass</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* ===== ANIMATED PIPELINE BEAM FLOW ===== */}
+        {/* Right Column: Live Interactive Compiler Workbench */}
         <div style={{
-          margin: '0 auto 40px',
-          padding: '14px 20px',
-          background: 'rgba(22, 27, 34, 0.75)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '12px',
+          background: '#161b22',
+          border: '1px solid #30363d',
+          borderRadius: '8px',
+          overflow: 'hidden',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+          flexDirection: 'column',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
         }}>
-          {PIPELINE_NODES.map((node, idx) => {
-            const Icon = node.icon;
-            const isCurrent = idx === activeStep;
-            return (
-              <React.Fragment key={node.id}>
-                <div
-                  onClick={() => setActiveStep(idx)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    background: isCurrent ? 'rgba(88, 166, 255, 0.14)' : 'transparent',
-                    border: isCurrent ? '1px solid #58a6ff' : '1px solid transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.25s ease',
-                    transform: isCurrent ? 'scale(1.05)' : 'scale(1)',
-                  }}
-                >
-                  <Icon size={16} color={isCurrent ? '#58a6ff' : node.color} />
-                  <span style={{
-                    fontSize: '0.82rem',
-                    fontWeight: isCurrent ? 700 : 500,
-                    color: isCurrent ? '#f0f6fc' : 'var(--text-muted)',
-                  }}>
-                    {node.label}
-                  </span>
-                </div>
-
-                {idx < PIPELINE_NODES.length - 1 && (
-                  <div style={{
-                    flex: 1,
-                    height: '2px',
-                    background: idx < activeStep
-                      ? 'linear-gradient(90deg, #58a6ff, #bc8cff)'
-                      : 'var(--border-subtle)',
-                    margin: '0 8px',
-                    position: 'relative',
-                    transition: 'background 0.3s ease',
-                  }}>
-                    {idx === activeStep && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-3px',
-                        left: '50%',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: '#58a6ff',
-                        boxShadow: '0 0 10px #58a6ff',
-                        animation: 'pulseDot 1s infinite',
-                      }} />
-                    )}
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-
-        {/* ===== INTERACTIVE REPL SHOWCASE CARD ===== */}
-        <div style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.6)',
-          animation: 'fadeInUp 0.7s ease-out',
-        }}>
-          {/* Card Titlebar */}
+          {/* Top Bar with example switches */}
           <div style={{
-            padding: '10px 16px',
-            background: 'var(--bg-tertiary)',
-            borderBottom: '1px solid var(--border-subtle)',
+            padding: '10px 14px',
+            background: '#21262d',
+            borderBottom: '1px solid #30363d',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '12px',
+            gap: '10px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }} />
-              <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>
-                interactive-preview.hs
+              <Terminal size={14} color="#58a6ff" />
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#f0f6fc' }}>
+                Live Compilation Inspector
               </span>
             </div>
 
-            {/* Snippet selector tabs */}
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {CODE_PREVIEWS.map((snippet, idx) => (
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {WORKBENCH_EXAMPLES.map((ex) => (
                 <button
-                  key={snippet.title}
-                  onClick={() => setActiveSnippetIdx(idx)}
+                  key={ex.id}
+                  onClick={() => setSelectedEx(ex)}
                   style={{
-                    padding: '3px 9px',
-                    fontSize: '0.74rem',
-                    borderRadius: '5px',
-                    background: idx === activeSnippetIdx ? 'var(--bg-elevated)' : 'transparent',
-                    border: idx === activeSnippetIdx ? '1px solid #58a6ff' : '1px solid transparent',
-                    color: idx === activeSnippetIdx ? '#f0f6fc' : 'var(--text-dim)',
+                    padding: '3px 8px',
+                    fontSize: '0.72rem',
+                    borderRadius: '4px',
+                    background: selectedEx.id === ex.id ? '#30363d' : 'transparent',
+                    border: selectedEx.id === ex.id ? '1px solid #58a6ff' : '1px solid transparent',
+                    color: selectedEx.id === ex.id ? '#f0f6fc' : '#8b949e',
                     cursor: 'pointer',
-                    fontWeight: idx === activeSnippetIdx ? 600 : 400,
-                    transition: 'all 0.15s ease',
+                    fontWeight: selectedEx.id === ex.id ? 600 : 400
                   }}
                 >
-                  {snippet.title}
+                  {ex.name}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Card Content Grid */}
+          {/* Haskell Source Code Section */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1.1fr 1fr',
-            background: 'var(--bg-code)',
+            padding: '14px 16px',
+            background: '#0d1117',
+            borderBottom: '1px solid #30363d',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.8rem',
+            lineHeight: 1.5,
           }}>
-            {/* Left: Original Code */}
-            <div style={{
-              padding: '18px 20px',
-              borderRight: '1px solid var(--border-subtle)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.82rem',
-              lineHeight: 1.6,
-            }}>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase' }}>
-                -- Original Haskell Expression
-              </div>
-              <pre style={{ margin: 0, color: '#e6edf3', whiteSpace: 'pre-wrap' }}>
-                <code>{activeSnippet.source}</code>
-              </pre>
+            <div style={{ fontSize: '0.68rem', color: '#6e7681', marginBottom: '6px', textTransform: 'uppercase' }}>
+              Input Source Code
             </div>
+            <pre style={{ margin: 0, color: '#e6edf3', whiteSpace: 'pre-wrap' }}>
+              <code>{selectedEx.source}</code>
+            </pre>
+          </div>
 
-            {/* Right: Transformation Output */}
-            <div style={{
-              padding: '18px 20px',
-              background: 'rgba(22, 27, 34, 0.4)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.82rem',
-            }}>
+          {/* Output Inspector Tabs */}
+          <div style={{
+            padding: '6px 14px',
+            background: '#161b22',
+            borderBottom: '1px solid #30363d',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '0.74rem'
+          }}>
+            <button
+              onClick={() => setActiveOutputTab('rewrites')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: activeOutputTab === 'rewrites' ? '#58a6ff' : '#8b949e',
+                fontWeight: activeOutputTab === 'rewrites' ? 600 : 400,
+                padding: '3px 0',
+                borderBottom: activeOutputTab === 'rewrites' ? '2px solid #58a6ff' : '2px solid transparent'
+              }}
+            >
+              Optimization Passes
+            </button>
+            <button
+              onClick={() => setActiveOutputTab('type')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: activeOutputTab === 'type' ? '#58a6ff' : '#8b949e',
+                fontWeight: activeOutputTab === 'type' ? 600 : 400,
+                padding: '3px 0',
+                borderBottom: activeOutputTab === 'type' ? '2px solid #58a6ff' : '2px solid transparent'
+              }}
+            >
+              Type Inference
+            </button>
+            <button
+              onClick={() => setActiveOutputTab('evaluation')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: activeOutputTab === 'evaluation' ? '#58a6ff' : '#8b949e',
+                fontWeight: activeOutputTab === 'evaluation' ? 600 : 400,
+                padding: '3px 0',
+                borderBottom: activeOutputTab === 'evaluation' ? '2px solid #58a6ff' : '2px solid transparent'
+              }}
+            >
+              Evaluation Proof
+            </button>
+          </div>
+
+          {/* Output Content */}
+          <div style={{
+            padding: '14px 16px',
+            background: '#0d1117',
+            minHeight: '140px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.78rem',
+            lineHeight: 1.5,
+          }}>
+            {activeOutputTab === 'rewrites' && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#58a6ff', textTransform: 'uppercase' }}>
-                    -- Compiler Rewriting & Verification
-                  </span>
-                  <span className={`badge badge-${activeSnippet.badgeColor}`} style={{ fontSize: '0.64rem' }}>
-                    {activeSnippet.badge}
-                  </span>
+                <div style={{ color: '#6e7681', fontSize: '0.68rem', marginBottom: '6px' }}>
+                  -- TRANSFORMATION RULES EXECUTED
                 </div>
-
-                <div style={{ color: '#3fb950', fontWeight: 600, marginBottom: '6px' }}>
-                  {activeSnippet.optimized}
-                </div>
-                <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                  {activeSnippet.highlight}
+                {selectedEx.passOutputs.rewrites.map((r, i) => (
+                  <div key={i} style={{ color: '#58a6ff', marginBottom: '3px' }}>
+                    {r}
+                  </div>
+                ))}
+                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #21262d', color: '#3fb950', fontWeight: 600 }}>
+                  {selectedEx.passOutputs.result}
                 </div>
               </div>
+            )}
 
-              <div style={{
-                marginTop: '16px',
-                paddingTop: '10px',
-                borderTop: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                  ✓ Semantics Preserved
-                </span>
-                <button
-                  onClick={onEnterApp}
-                  style={{
-                    background: 'none', border: 'none', color: '#58a6ff',
-                    cursor: 'pointer', fontSize: '0.74rem', fontWeight: 600,
-                    display: 'flex', alignItems: 'center', gap: '4px'
-                  }}
-                >
-                  Inspect in Studio <ArrowRight size={12} />
-                </button>
+            {activeOutputTab === 'type' && (
+              <div>
+                <div style={{ color: '#6e7681', fontSize: '0.68rem', marginBottom: '6px' }}>
+                  -- HINDLEY-MILNER TYPE JUDGMENT
+                </div>
+                <div style={{ color: '#bc8cff', fontWeight: 600 }}>
+                  {selectedEx.passOutputs.type}
+                </div>
+                <div style={{ color: '#8b949e', marginTop: '6px', fontSize: '0.74rem' }}>
+                  Unification: Robinson algorithm verified 0 type clashes.
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeOutputTab === 'evaluation' && (
+              <div>
+                <div style={{ color: '#6e7681', fontSize: '0.68rem', marginBottom: '6px' }}>
+                  -- STEP-BOUNDED INTERPRETER PROOF
+                </div>
+                <div style={{ color: '#3fb950', fontWeight: 600 }}>
+                  {selectedEx.passOutputs.evaluation}
+                </div>
+                <div style={{ color: '#8b949e', marginTop: '6px', fontSize: '0.74rem' }}>
+                  Evaluated with step limit of 1,000 beta-reductions.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom quick CTA */}
+          <div style={{
+            padding: '8px 16px',
+            background: '#161b22',
+            borderTop: '1px solid #30363d',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.74rem'
+          }}>
+            <span style={{ color: '#8b949e' }}>Ready to write custom Haskell?</span>
+            <button
+              onClick={onEnterApp}
+              style={{
+                background: 'none', border: 'none', color: '#58a6ff',
+                cursor: 'pointer', fontSize: '0.74rem', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              Open in Studio <ArrowRight size={12} />
+            </button>
           </div>
         </div>
+      </section>
 
-        {/* ===== 3 CLASSIC HIGHLIGHT CARDS ===== */}
+      {/* ===== SECTION 2: 7-PHASE PIPELINE ARCHITECTURE ===== */}
+      <section id="architecture" style={{
+        maxWidth: '1240px',
+        margin: '0 auto',
+        padding: '60px 24px',
+        borderTop: '1px solid #30363d',
+      }}>
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '0.74rem', color: '#58a6ff', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '4px' }}>
+            System Architecture
+          </div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 700, margin: 0, color: '#f0f6fc' }}>
+            The 7-Phase Compilation Pipeline
+          </h2>
+          <p style={{ color: '#8b949e', fontSize: '0.88rem', margin: '6px 0 0', maxWidth: '650px' }}>
+            HaskLens decomposes functional compilation into seven distinct, observable stages. Click any pass below to inspect its operational model and representations.
+          </p>
+        </div>
+
+        {/* Pipeline Stage Buttons */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '8px',
+          marginBottom: '20px'
+        }}>
+          {PIPELINE_STAGES.map((stg, i) => {
+            const isSelected = i === selectedStageIdx;
+            return (
+              <button
+                key={stg.step}
+                onClick={() => setSelectedStageIdx(i)}
+                style={{
+                  padding: '10px 12px',
+                  background: isSelected ? '#21262d' : '#161b22',
+                  border: isSelected ? '1px solid #58a6ff' : '1px solid #30363d',
+                  borderRadius: '6px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  transition: 'border-color 0.1s ease',
+                }}
+              >
+                <span style={{ fontSize: '0.65rem', color: isSelected ? '#58a6ff' : '#6e7681', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                  STAGE {stg.step}
+                </span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isSelected ? '#f0f6fc' : '#c9d1d9' }}>
+                  {stg.component}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Stage Inspector Box */}
+        <div style={{
+          background: '#161b22',
+          border: '1px solid #30363d',
+          borderRadius: '6px',
+          padding: '20px 24px',
+          display: 'grid',
+          gridTemplateColumns: '1.2fr 1fr',
+          gap: '24px',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span className="badge badge-blue">Stage {activeStage.step}</span>
+              <span style={{ fontSize: '0.78rem', color: '#8b949e', fontFamily: 'var(--font-mono)' }}>
+                {activeStage.tech}
+              </span>
+            </div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '0 0 8px 0', color: '#f0f6fc' }}>
+              {activeStage.name}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#8b949e', lineHeight: 1.6, margin: 0 }}>
+              {activeStage.desc}
+            </p>
+          </div>
+
+          <div style={{
+            background: '#0d1117',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '12px 14px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.74rem',
+            color: '#79c0ff',
+            lineHeight: 1.5,
+          }}>
+            <div style={{ fontSize: '0.66rem', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
+              Pass Representation
+            </div>
+            {activeStage.sample}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SECTION 3: PCD COURSE PROBLEM CONTEXT ===== */}
+      <section id="rationale" style={{
+        maxWidth: '1240px',
+        margin: '0 auto',
+        padding: '60px 24px',
+        borderTop: '1px solid #30363d',
+      }}>
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '0.74rem', color: '#d29922', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '4px' }}>
+            Pedagogical Motivation
+          </div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 700, margin: 0, color: '#f0f6fc' }}>
+            Why We Built HaskLens for Compiler Design
+          </h2>
+          <p style={{ color: '#8b949e', fontSize: '0.88rem', margin: '6px 0 0', maxWidth: '650px' }}>
+            Principles of Compiler Design coursework deals with challenging functional semantics. HaskLens addresses four core dilemmas.
+          </p>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
           gap: '16px',
-          marginTop: '44px',
         }}>
           {/* Card 1 */}
-          <div
-            style={{
-              padding: '22px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '10px',
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#58a6ff';
-              e.currentTarget.style.transform = 'translateY(-3px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '8px',
-              background: 'rgba(88, 166, 255, 0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: '14px',
-            }}>
-              <Layers size={18} color="#58a6ff" />
+          <div style={{
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '18px 20px',
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#f85149', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
+              DILEMMA 01
             </div>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
-              Dual AST Visualizer
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
-              Compare original parser AST and optimized rewrite tree side-by-side with collapsible nodes and location coordinates.
+            <h4 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 8px', color: '#f0f6fc' }}>
+              The Compiler Opacity Problem
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.55, margin: 0 }}>
+              Standard compilers jump directly from source to machine binaries or massive intermediate IRs. Students cannot observe how individual AST nodes are processed. HaskLens renders every pass distinctly.
             </p>
           </div>
 
           {/* Card 2 */}
-          <div
-            style={{
-              padding: '22px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '10px',
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#3fb950';
-              e.currentTarget.style.transform = 'translateY(-3px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '8px',
-              background: 'rgba(63, 185, 80, 0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: '14px',
-            }}>
-              <Sparkles size={18} color="#3fb950" />
+          <div style={{
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '18px 20px',
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#d29922', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
+              DILEMMA 02
             </div>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
-              Algebraic Term Rewriter
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
-              Watch constant folding, identity rules (<code>x * 1 ➔ x</code>), and dead-branch pruning apply with transformation logs.
+            <h4 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 8px', color: '#f0f6fc' }}>
+              Understanding Algebraic Rewrites
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.55, margin: 0 }}>
+              Textbooks describe rules like <code>x * 1 → x</code> and constant folding in isolation, but tracing how these rules interact across multiple passes is difficult. HaskLens logs every rule application step-by-step.
             </p>
           </div>
 
           {/* Card 3 */}
-          <div
-            style={{
-              padding: '22px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '10px',
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#bc8cff';
-              e.currentTarget.style.transform = 'translateY(-3px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '8px',
-              background: 'rgba(188, 140, 255, 0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: '14px',
-            }}>
-              <Network size={18} color="#bc8cff" />
+          <div style={{
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '18px 20px',
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#bc8cff', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
+              DILEMMA 03
             </div>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: '0 0 6px', color: '#f0f6fc' }}>
-              Recursion & Call Topology
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0 }}>
-              Tarjan's strongly connected components algorithm visualizes direct recursion loops, mutual cycles, and tail calls.
+            <h4 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 8px', color: '#f0f6fc' }}>
+              Recursion Topology & Mutual Cycles
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.55, margin: 0 }}>
+              Functional languages possess no <code>while</code> loops; all iteration occurs through recursion. HaskLens identifies direct recursion loops, flags tail calls, and runs Tarjan's SCC algorithm for mutual recursion.
+            </p>
+          </div>
+
+          {/* Card 4 */}
+          <div style={{
+            background: '#161b22',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            padding: '18px 20px',
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#3fb950', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
+              DILEMMA 04
+            </div>
+            <h4 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 8px', color: '#f0f6fc' }}>
+              Proving Semantic Preservation
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.55, margin: 0 }}>
+              An aggressive optimization pass can inadvertently alter runtime behavior. HaskLens runs a bounded AST interpreter against sample inputs before and after optimization to prove semantic equivalence.
             </p>
           </div>
         </div>
+      </section>
 
-        {/* ===== BOTTOM CTA CARD ===== */}
-        <div style={{
-          marginTop: '48px',
-          padding: '36px 28px',
-          textAlign: 'center',
-          background: 'linear-gradient(180deg, rgba(31, 111, 235, 0.1) 0%, rgba(22, 27, 34, 0.6) 100%)',
-          border: '1px solid rgba(88, 166, 255, 0.25)',
-          borderRadius: '12px',
-        }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 10px', color: '#f0f6fc' }}>
-            Ready to explore functional compilation?
-          </h2>
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: '0 auto 20px', maxWidth: '480px' }}>
-            Type your own Haskell expressions or test sample programs from Euclidean GCD to Mutual Recursion.
-          </p>
-          <button
-            onClick={onEnterApp}
-            className="btn btn-primary"
-            style={{
-              padding: '10px 24px',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              borderRadius: '8px',
-              boxShadow: '0 4px 16px rgba(31, 111, 235, 0.4)'
-            }}
-          >
-            Open Compiler Studio <ArrowRight size={14} />
-          </button>
-        </div>
-      </main>
-
-      {/* ===== MINIMAL FOOTER ===== */}
+      {/* ===== FOOTER CALL TO ACTION ===== */}
       <footer style={{
-        padding: '24px 32px',
-        borderTop: '1px solid var(--border-subtle)',
+        background: '#161b22',
+        borderTop: '1px solid #30363d',
+        padding: '36px 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '12px',
-        fontSize: '0.78rem',
-        color: 'var(--text-dim)',
+        gap: '16px',
+        fontSize: '0.8rem',
+        color: '#8b949e',
       }}>
-        <div>
-          HaskLens • Principles of Compiler Design Assignment
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <strong style={{ color: '#f0f6fc' }}>HaskLens</strong>
+          <span>•</span>
+          <span>Principles of Compiler Design (PCD) Assignment</span>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <a
             href="https://github.com/HRKACHA/HaskLens"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}
+            style={{ color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}
           >
-            <GithubIcon size={14} /> GitHub Repository <ExternalLink size={10} />
+            <GithubIcon size={14} /> github.com/HRKACHA/HaskLens
           </a>
+          <button
+            onClick={onEnterApp}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '5px 14px', fontSize: '0.78rem' }}
+          >
+            Launch IDE <ArrowRight size={12} />
+          </button>
         </div>
       </footer>
-
-      {/* ===== SLEEK KEYFRAME ANIMATIONS ===== */}
-      <style>{`
-        @keyframes floatOrb {
-          0% { transform: translate(0px, 0px) scale(1); }
-          100% { transform: translate(40px, -30px) scale(1.1); }
-        }
-        @keyframes pulseDot {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.3); opacity: 0.6; }
-        }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
