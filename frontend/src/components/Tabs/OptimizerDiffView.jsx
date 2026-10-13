@@ -18,41 +18,40 @@ export default function OptimizerDiffView({
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Metrics Banner */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px' }}>
-        <div className="glass-panel" style={{ padding: '12px 14px', background: 'var(--bg-tertiary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-            <Zap size={14} color="#58a6ff" />
-            Optimizations Applied
-          </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '3px', color: '#58a6ff' }}>
-            {optimizationCount} {optimizationCount === 1 ? 'Rule' : 'Rules'}
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Metrics Summary Strip */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '10px',
+        padding: '8px 12px',
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: '6px',
+        fontSize: '0.78rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <Zap size={14} color="#58a6ff" />
+          <span style={{ color: 'var(--text-muted)' }}>Optimizations:</span>
+          <strong style={{ color: '#58a6ff' }}>{optimizationCount} {optimizationCount === 1 ? 'Rule' : 'Rules'}</strong>
         </div>
 
-        <div className="glass-panel" style={{ padding: '12px 14px', background: 'var(--bg-tertiary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-            <ShieldCheck size={14} color="#3fb950" />
-            Equivalence Status
-          </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '5px', color: '#3fb950' }}>
-            Semantics Preserved
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ShieldCheck size={14} color="#3fb950" />
+          <span style={{ color: '#3fb950', fontWeight: 600 }}>Semantics Preserved</span>
         </div>
 
-        <div className="glass-panel" style={{ padding: '12px 14px', background: 'var(--bg-tertiary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-            <span style={{ color: '#d29922', fontWeight: 700 }}>λ</span>
-            Distinct Rules
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: '#d29922', fontWeight: 700 }}>λ</span>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {Object.entries(ruleCounts).map(([r, c]) => (
-              <span key={r} className="badge badge-blue" style={{ marginRight: '5px', marginBottom: '3px' }}>
+              <span key={r} className="badge badge-blue" style={{ fontSize: '0.66rem', padding: '1px 5px' }}>
                 {r}: {c}
               </span>
             ))}
-            {Object.keys(ruleCounts).length === 0 && 'No rewrites needed'}
+            {Object.keys(ruleCounts).length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: '0.74rem' }}>No rewrites needed</span>}
           </div>
         </div>
       </div>

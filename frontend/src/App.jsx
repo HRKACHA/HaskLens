@@ -35,7 +35,7 @@ export default function App() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileResult, setCompileResult] = useState(null);
   const [apiError, setApiError] = useState(null);
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Helper to parse comma separated arguments to primitives
   const parseArgs = (raw) => {
@@ -128,13 +128,13 @@ export default function App() {
   };
 
   const tabs = [
-    { id: 'optimizer', label: 'Optimizer & Diff', icon: Sparkles, badge: compileResult?.optimization_count != null ? `${compileResult.optimization_count} rewrites` : null, color: '#58a6ff' },
-    { id: 'ast', label: 'AST Visualizer', icon: GitBranch, badge: compileResult?.ast ? 'Tree' : null, color: '#8b949e' },
-    { id: 'tokens', label: 'Lexical Tokens', icon: FileCode, badge: compileResult?.tokens?.token_count ? `${compileResult.tokens.token_count}` : null, color: '#bc8cff' },
-    { id: 'types', label: 'Types & Semantics', icon: ShieldCheck, badge: compileResult?.type_analysis ? 'Inferred' : null, color: '#3fb950' },
-    { id: 'recursion', label: 'Call Graph & Cycles', icon: Network, badge: compileResult?.recursion_analysis?.has_recursion ? 'Recursive' : null, color: '#d29922' },
-    { id: 'verification', label: 'Bounded Evaluation', icon: CheckCheck, badge: compileResult?.evaluation?.success ? 'Computed' : null, color: '#58a6ff' },
-    { id: 'metrics', label: 'Compiler Metrics', icon: Activity, badge: compileResult?.phase_timings ? 'Timings' : null, color: '#8b949e' },
+    { id: 'optimizer', label: 'Optimizer & Diff', icon: Sparkles, badge: compileResult?.optimization_count != null ? `${compileResult.optimization_count}` : null, color: '#58a6ff' },
+    { id: 'ast', label: 'AST Visualizer', icon: GitBranch, color: '#8b949e' },
+    { id: 'tokens', label: 'Tokens', icon: FileCode, badge: compileResult?.tokens?.token_count ? `${compileResult.tokens.token_count}` : null, color: '#bc8cff' },
+    { id: 'types', label: 'Type Checker', icon: ShieldCheck, color: '#3fb950' },
+    { id: 'recursion', label: 'Call Graph', icon: Network, badge: compileResult?.recursion_analysis?.has_recursion ? 'Cycle' : null, color: '#d29922' },
+    { id: 'verification', label: 'Evaluation', icon: CheckCheck, color: '#58a6ff' },
+    { id: 'metrics', label: 'Metrics', icon: Activity, color: '#8b949e' },
   ];
 
   const totalTime = compileResult?.phase_timings
@@ -154,7 +154,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
       {/* Top Header */}
       <Header
         onCompile={() => runCompilation()}
@@ -177,7 +177,7 @@ export default function App() {
         onSelectPreset={handleSelectPreset}
       />
 
-      {/* First-timer Onboarding & Explainer Banner */}
+      {/* First-timer Onboarding & Explainer Modal */}
       {showGuide && (
         <OnboardingGuide onClose={() => setShowGuide(false)} />
       )}
@@ -185,33 +185,35 @@ export default function App() {
       {/* API Error Banner if offline */}
       {apiError && (
         <div style={{
-          margin: '12px 20px 0 20px',
-          padding: '12px 16px',
+          margin: '8px 14px 0 14px',
+          padding: '8px 12px',
           background: 'rgba(248, 81, 73, 0.12)',
           border: '1px solid rgba(248, 81, 73, 0.3)',
           borderRadius: '6px',
           color: '#f85149',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          fontSize: '0.83rem'
+          gap: '8px',
+          fontSize: '0.8rem',
+          flexShrink: 0
         }}>
-          <AlertCircle size={16} />
+          <AlertCircle size={15} />
           <span>API Connection Error: {apiError}. Ensure backend server is running on port 8000.</span>
         </div>
       )}
 
-      {/* Main Split Grid */}
+      {/* Main Split Grid - Takes remaining 100% height */}
       <main style={{
         flex: 1,
+        minHeight: 0,
         display: 'grid',
-        gridTemplateColumns: '440px 1fr',
-        gap: '16px',
-        padding: '12px 20px 20px 20px',
-        minHeight: 0
+        gridTemplateColumns: 'minmax(350px, 38%) 1fr',
+        gap: '10px',
+        padding: '10px 14px 12px 14px',
+        overflow: 'hidden'
       }}>
         {/* Left: Code Editor and inputs */}
-        <section style={{ height: showGuide ? 'calc(100vh - 310px)' : 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column' }}>
+        <section style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <CodeEditor
             source={source}
             onChangeSource={(val) => {
@@ -230,23 +232,26 @@ export default function App() {
 
         {/* Right: Visual Compiler Phase Tabs */}
         <section className="glass-panel" style={{
-          height: showGuide ? 'calc(100vh - 310px)' : 'calc(100vh - 160px)',
+          height: '100%',
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           background: 'var(--bg-secondary)',
-          borderColor: 'var(--border-subtle)'
+          borderColor: 'var(--border-subtle)',
+          borderRadius: '8px'
         }}>
           {/* Tabs Navigation Header */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '2px',
-            padding: '6px 10px',
+            gap: '3px',
+            padding: '5px 8px',
             borderBottom: '1px solid var(--border-subtle)',
             background: 'var(--bg-secondary)',
             overflowX: 'auto',
-            flexShrink: 0
+            flexShrink: 0,
+            scrollbarWidth: 'none'
           }}>
             {tabs.map((t) => {
               const Icon = t.icon;
@@ -259,14 +264,14 @@ export default function App() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '7px',
-                    padding: '7px 12px',
-                    borderRadius: '6px',
+                    gap: '6px',
+                    padding: '5px 10px',
+                    borderRadius: '5px',
                     background: isActive ? 'var(--bg-tertiary)' : 'transparent',
                     border: isActive ? '1px solid #30363d' : '1px solid transparent',
                     color: isActive ? '#f0f6fc' : '#8b949e',
                     cursor: 'pointer',
-                    fontSize: '0.78rem',
+                    fontSize: '0.75rem',
                     fontFamily: 'var(--font-sans)',
                     fontWeight: isActive ? 600 : 500,
                     transition: 'all 0.12s ease',
@@ -279,7 +284,7 @@ export default function App() {
                     if (!isActive) e.currentTarget.style.color = '#8b949e';
                   }}
                 >
-                  <Icon size={14} color={isActive ? t.color : 'currentColor'} />
+                  <Icon size={13} color={isActive ? t.color : 'currentColor'} />
                   <span>{t.label}</span>
                   {t.badge && (
                     <span style={{
@@ -302,8 +307,9 @@ export default function App() {
           <div style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '18px',
-            background: 'var(--bg-secondary)'
+            padding: '14px',
+            background: 'var(--bg-secondary)',
+            minHeight: 0
           }}>
             {activeTab === 'optimizer' && (
               <OptimizerDiffView

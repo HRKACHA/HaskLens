@@ -16,16 +16,15 @@ export default function Header({
   onGoHome
 }) {
   return (
-    <header className="glass-panel" style={{
-      margin: '14px 20px 0 20px',
-      padding: '10px 20px',
+    <header style={{
+      padding: '8px 16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      flexWrap: 'wrap',
-      gap: '14px',
+      gap: '12px',
       background: 'var(--bg-secondary)',
-      borderColor: 'var(--border-subtle)'
+      borderBottom: '1px solid var(--border-subtle)',
+      flexShrink: 0
     }}>
       {/* Brand logo & title */}
       <div 
@@ -33,51 +32,48 @@ export default function Header({
         style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '12px',
+          gap: '10px',
           cursor: onGoHome ? 'pointer' : 'default',
           userSelect: 'none'
         }}
-        title={onGoHome ? "Back to HaskLens Overview" : undefined}
+        title={onGoHome ? "Back to Landing Page" : undefined}
       >
-        {/* HaskLens Optical Logo: Lens aperture framing the lambda */}
         <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '8px',
+          width: '32px',
+          height: '32px',
+          borderRadius: '7px',
           background: 'var(--bg-tertiary)',
           border: '1px solid #30363d',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative'
+          flexShrink: 0
         }}>
-          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Lens outer ring */}
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
             <circle cx="14" cy="14" r="10" stroke="#58a6ff" strokeWidth="2.2" strokeLinecap="round" />
-            {/* Optic focus ticks */}
             <line x1="14" y1="2" x2="14" y2="4" stroke="#58a6ff" strokeWidth="1.5" />
             <line x1="2" y1="14" x2="4" y2="14" stroke="#58a6ff" strokeWidth="1.5" />
             <line x1="14" y1="24" x2="14" y2="26" stroke="#58a6ff" strokeWidth="1.5" />
             <line x1="24" y1="14" x2="26" y2="14" stroke="#58a6ff" strokeWidth="1.5" />
-            {/* Lens handle */}
             <line x1="21.5" y1="21.5" x2="29" y2="29" stroke="#8b949e" strokeWidth="3" strokeLinecap="round" />
-            {/* Haskell Lambda symbol inside lens */}
-            <text x="14" y="18" fill="#f0f6fc" fontSize="13" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
+            <text x="14" y="18" fill="#f0f6fc" fontSize="12" fontFamily="sans-serif" fontWeight="700" textAnchor="middle">λ</text>
           </svg>
         </div>
 
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: '700', letterSpacing: '-0.3px', margin: 0, color: 'var(--text-main)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: '700', letterSpacing: '-0.3px', margin: 0, color: 'var(--text-main)' }}>
               HaskLens
-            </h1>
-            <span className="badge badge-blue" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-              Compiler Explorer
             </span>
+            <span className="badge badge-blue" style={{ fontSize: '0.64rem', padding: '1px 5px' }}>
+              Explorer
+            </span>
+            {onGoHome && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--accent-blue)', opacity: 0.85, marginLeft: '2px' }}>
+                ← Overview
+              </span>
+            )}
           </div>
-          <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: 0 }}>
-            Interactive Haskell Compiler & Optimization Observatory
-          </p>
         </div>
       </div>
 
@@ -86,21 +82,21 @@ export default function Header({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: '10px',
           background: 'var(--bg-tertiary)',
-          padding: '4px 12px',
+          padding: '3px 10px',
           borderRadius: '6px',
           border: '1px solid var(--border-subtle)',
-          fontSize: '0.78rem'
+          fontSize: '0.74rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             {compileSuccess ? (
-              <span className="badge badge-green" style={{ padding: '2px 7px' }}>
-                <CheckCircle2 size={12} /> Ready
+              <span className="badge badge-green" style={{ padding: '1px 6px', fontSize: '0.68rem' }}>
+                <CheckCircle2 size={11} /> Ready
               </span>
             ) : (
-              <span className="badge badge-red" style={{ padding: '2px 7px' }}>
-                <AlertCircle size={12} /> Errors
+              <span className="badge badge-red" style={{ padding: '1px 6px', fontSize: '0.68rem' }}>
+                <AlertCircle size={11} /> Errors
               </span>
             )}
           </div>
@@ -120,8 +116,8 @@ export default function Header({
       )}
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        {/* Help / First-timer Guide Button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Help / Guide Button */}
         <button
           id="btn-toggle-guide"
           className="btn btn-ghost btn-sm"
@@ -130,12 +126,13 @@ export default function Header({
             background: showGuide ? 'rgba(88, 166, 255, 0.12)' : 'transparent',
             borderColor: showGuide ? '#58a6ff' : 'var(--border-subtle)',
             color: showGuide ? '#58a6ff' : 'var(--text-muted)',
-            fontWeight: showGuide ? 600 : 500
+            fontSize: '0.76rem',
+            padding: '4px 9px'
           }}
-          title="How does HaskLens work?"
+          title="Open HaskLens Workflow Guide"
         >
-          <BookOpen size={13} />
-          <span>{showGuide ? 'Hide Guide' : 'How It Works'}</span>
+          <BookOpen size={12} />
+          <span>How It Works</span>
         </button>
 
         <button
@@ -143,8 +140,9 @@ export default function Header({
           className="btn btn-ghost btn-sm"
           onClick={onResetCode}
           title="Reset to default code"
+          style={{ fontSize: '0.76rem', padding: '4px 9px' }}
         >
-          <RefreshCw size={13} /> Reset
+          <RefreshCw size={12} /> Reset
         </button>
 
         {hasResult && (
@@ -154,28 +152,35 @@ export default function Header({
               className="btn btn-ghost btn-sm"
               onClick={onExportJson}
               title="Download AST as JSON"
+              style={{ fontSize: '0.76rem', padding: '4px 9px' }}
             >
-              <Download size={13} /> AST JSON
+              <Download size={12} /> AST
             </button>
             <button
               id="btn-export-haskell"
               className="btn btn-ghost btn-sm"
               onClick={onExportHaskell}
               title="Download Optimized Haskell source"
+              style={{ fontSize: '0.76rem', padding: '4px 9px' }}
             >
-              <Code2 size={13} /> Opt Code
+              <Code2 size={12} /> Haskell
             </button>
           </>
         )}
 
         <button
           id="btn-compile-run"
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm"
           onClick={onCompile}
           disabled={isCompiling}
-          style={{ opacity: isCompiling ? 0.7 : 1 }}
+          style={{
+            padding: '5px 14px',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            opacity: isCompiling ? 0.7 : 1
+          }}
         >
-          <Play size={14} fill="currentColor" />
+          <Play size={13} fill="currentColor" />
           {isCompiling ? 'Compiling...' : 'Compile & Optimize'}
         </button>
       </div>

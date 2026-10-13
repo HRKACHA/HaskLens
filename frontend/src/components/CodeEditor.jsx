@@ -217,68 +217,62 @@ export default function CodeEditor({
       </div>
 
       {/* Execution / Evaluation Settings footer */}
+      {/* Execution / Evaluation Settings footer */}
       <div style={{
-        padding: '12px 16px',
+        padding: '6px 14px',
         background: 'var(--bg-secondary)',
         display: 'flex',
-        flexDirection: 'column',
-        gap: '9px'
+        alignItems: 'center',
+        gap: '10px',
+        borderTop: '1px solid var(--border-subtle)',
+        fontSize: '0.74rem',
+        flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-          <Settings2 size={13} color="#58a6ff" />
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Execution & Evaluation Settings
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-muted)', flexShrink: 0 }}>
+          <Settings2 size={12} color="#58a6ff" />
+          <span style={{ fontWeight: 600 }}>Test Run:</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.73rem', color: 'var(--text-dim)', marginBottom: '3px' }}>
-              Entry Function
-            </label>
-            <input
-              id="input-entry-func"
-              type="text"
-              value={entryFunction}
-              onChange={(e) => onChangeEntryFunction(e.target.value)}
-              placeholder="e.g. fact"
-              style={{
-                width: '100%',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '5px',
-                padding: '5px 9px',
-                color: '#f0f6fc',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.78rem',
-                outline: 'none'
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.73rem', color: 'var(--text-dim)', marginBottom: '3px' }}>
-              Test Inputs (comma separated)
-            </label>
-            <input
-              id="input-example-args"
-              type="text"
-              value={exampleInputs}
-              onChange={(e) => onChangeExampleInputs(e.target.value)}
-              placeholder="e.g. 5 or 2, 8, 1"
-              style={{
-                width: '100%',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '5px',
-                padding: '5px 9px',
-                color: '#f0f6fc',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.78rem',
-                outline: 'none'
-              }}
-            />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>Function:</span>
+          <input
+            id="input-entry-func"
+            type="text"
+            value={entryFunction}
+            onChange={(e) => onChangeEntryFunction(e.target.value)}
+            placeholder="e.g. fact"
+            style={{
+              width: '85px',
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '4px',
+              padding: '3px 7px',
+              color: '#f0f6fc',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              outline: 'none'
+            }}
+          />
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem', marginLeft: '4px' }}>Inputs:</span>
+          <input
+            id="input-example-args"
+            type="text"
+            value={exampleInputs}
+            onChange={(e) => onChangeExampleInputs(e.target.value)}
+            placeholder="e.g. 5"
+            style={{
+              flex: 1,
+              maxWidth: '180px',
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '4px',
+              padding: '3px 7px',
+              color: '#f0f6fc',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              outline: 'none'
+            }}
+          />
         </div>
       </div>
     </div>
