@@ -34,7 +34,4 @@ npm run dev
 
 Open http://localhost:5173
 
-## Deployment
 
-- **Backend**: Deployed on [Render](https://render.com) as a Web Service
-- **Frontend**: Deployed on [Vercel](https://vercel.com) as a static site
