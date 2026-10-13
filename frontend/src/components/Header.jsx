@@ -12,7 +12,8 @@ export default function Header({
   totalOptimizations,
   executionTime,
   onToggleGuide,
-  showGuide
+  showGuide,
+  onGoHome
 }) {
   return (
     <header className="glass-panel" style={{
@@ -27,7 +28,17 @@ export default function Header({
       borderColor: 'var(--border-subtle)'
     }}>
       {/* Brand logo & title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div 
+        onClick={onGoHome}
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          cursor: onGoHome ? 'pointer' : 'default',
+          userSelect: 'none'
+        }}
+        title={onGoHome ? "Back to HaskLens Overview" : undefined}
+      >
         {/* HaskLens Optical Logo: Lens aperture framing the lambda */}
         <div style={{
           width: '38px',

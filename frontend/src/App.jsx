@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LandingPage from './components/LandingPage';
 import Header from './components/Header';
 import PresetSelector from './components/PresetSelector';
 import OnboardingGuide from './components/OnboardingGuide';
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  const [currentView, setCurrentView] = useState('landing'); // 'landing' or 'compiler'
   const defaultPreset = PRESETS[0];
   const [source, setSource] = useState(defaultPreset.code);
   const [entryFunction, setEntryFunction] = useState(defaultPreset.entryFunction);
@@ -139,6 +141,18 @@ export default function App() {
     ? Object.values(compileResult.phase_timings).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0).toFixed(1)
     : null;
 
+  // Handler to switch from landing to compiler
+  const handleEnterApp = () => {
+    setCurrentView('compiler');
+    // Trigger initial compilation when entering the app
+    runCompilation(defaultPreset.code, defaultPreset.entryFunction, defaultPreset.defaultArgs);
+  };
+
+  // Show landing page
+  if (currentView === 'landing') {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
       {/* Top Header */}
@@ -154,6 +168,7 @@ export default function App() {
         executionTime={totalTime}
         onToggleGuide={() => setShowGuide(!showGuide)}
         showGuide={showGuide}
+        onGoHome={() => setCurrentView('landing')}
       />
 
       {/* Preset Examples Chips */}
