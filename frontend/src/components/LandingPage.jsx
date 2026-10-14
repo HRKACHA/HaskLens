@@ -10,6 +10,7 @@ import {
   Zap,
   Repeat,
   ExternalLink,
+  Network,
 } from 'lucide-react';
 
 function GithubIcon({ size = 16, color = 'currentColor' }) {
